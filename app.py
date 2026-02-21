@@ -12,9 +12,31 @@ st.set_page_config(page_title="AI Smart Grocery Assistant", layout="centered")
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# ---------------- DATABASE ----------------
-conn = sqlite3.connect("shop.db", check_same_thread=False)
+# ---------------- DATABASE INIT SAFE ----------------
+import os
+DB_PATH = os.path.join(os.getcwd(), "shop.db")
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 c = conn.cursor()
+
+# users table
+c.execute("""
+CREATE TABLE IF NOT EXISTS users(
+    username TEXT PRIMARY KEY,
+    password TEXT
+)
+""")
+
+# sales table
+c.execute("""
+CREATE TABLE IF NOT EXISTS sales(
+    username TEXT,
+    day INTEGER,
+    product TEXT,
+    quantity INTEGER
+)
+""")
+
+conn.commit()
 
 # users table
 c.execute("""
@@ -100,9 +122,14 @@ if st.button("Save Sale"):
     st.success("Sale saved successfully!")
 
 # ---------------- LOAD USER DATA ----------------
-df = pd.read_sql(
-    f"SELECT day, product, quantity FROM sales WHERE username='{st.session_state['user']}'",
-    conn
+try:
+    df = pd.read_sql_query(
+        "SELECT day, product, quantity FROM sales WHERE username=?",
+        conn,
+        params=(st.session_state["user"],)
+    )
+except:
+    df = pd.DataFrame(columns=["day","product","quantity"])
 )
 
 if len(df) > 0:
