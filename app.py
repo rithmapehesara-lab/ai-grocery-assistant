@@ -128,9 +128,8 @@ try:
         conn,
         params=(st.session_state["user"],)
     )
-except:
+except Exception:
     df = pd.DataFrame(columns=["day","product","quantity"])
-)
 
 if len(df) > 0:
 
